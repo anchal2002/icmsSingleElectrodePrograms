@@ -13,7 +13,7 @@
 % temporal frequency is mapped to duration (in the old version, the
 % frequency of stimulation)
 
-function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth)
+function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth, effector)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('badTrialNameStr','var');     badTrialNameStr = '_v5';        end
@@ -416,9 +416,18 @@ hERP = getPlotHandles(maxNumElectrodeGroups,1,[0.05 0.05 0.1 0.6]);
 hFR  = getPlotHandles(maxNumElectrodeGroups,1,[0.175 0.05 0.1 0.6]);
 hDeltaPSD = getPlotHandles(maxNumElectrodeGroups,1,[0.3 0.05 0.1 0.6]);
 hDeltaTF  = getPlotHandles(maxNumElectrodeGroups,numConditions,[0.425 0.05 0.55 0.6]);
-
+if protocolType == 3
+    if effector == 1
+        uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
+            'String',[subjectName '(effector)'],'FontSize',fontSizeSmall);
+    else
+        uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
+            'String',[subjectName '(modulator)'],'FontSize',fontSizeSmall);
+    end
+else
 uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
     'String',[subjectName expDate protocolName],'FontSize',fontSizeSmall);
+end
 
 %%%%%%%%%%%%%%%%%%%%%% Get data from  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 numStimulationElectrodes = length(stimulationElectrode);
@@ -585,9 +594,25 @@ colorNames = jet(numConditions);
                         else
                         plot(hDeltaPSD(iGroup),tmpData.freqST,deltaPSD,'color',colorNames(iCond,:)); hold(hDeltaPSD(iGroup),'on');
                         plot(hDeltaPSD(iGroup),tmpData.freqST,zeros(1,length(deltaPSD)),'color','k');
-                    end                    
+                    end  
+                    axes(hDeltaPSD(iGroup));
+                    hold on;
+                    xline(delPSDFreqRange(1), 'k:', 'LineWidth', 1.2);
+                    xline(delPSDFreqRange(2), 'k:', 'LineWidth', 1.2);
+
                     pcolor(hDeltaTF(iGroup,iCond),tmpData.timeTF,tmpData.freqTF,deltaTF'); shading(hDeltaTF(iGroup,iCond),'interp');
                     clim(hDeltaTF(iGroup,iCond),zRange); axis(hDeltaTF(iGroup,iCond),[signalRange freqRange]);
+                    axes(hDeltaTF(iGroup,iCond));
+                    hold on;
+                    
+                    % Mark Delta PSD frequency range on TF plot
+                    yline(delPSDFreqRange(1), 'k:', 'LineWidth', 1.2);
+                    yline(delPSDFreqRange(2), 'k:', 'LineWidth', 1.2);
+                    % Vertical dotted lines showing stimulation period
+                    axes(hDeltaTF(iGroup,iCond));
+                    hold on;
+                    xline(stimPeriod(1), 'k:', 'LineWidth', 1.2);
+                    xline(stimPeriod(2), 'k:', 'LineWidth', 1.2);
                     
                 end
             end
@@ -707,7 +732,11 @@ colorNames = jet(numConditions);
                 tuningTitle = 'vs Amplitude';
             else
                 if eValsUnique(end) == 7
-                    tuningTitle = 'vs # Pulses';
+                   if protocolType == 3
+                       tuningTitle = 'vs Delays';
+                       else
+                        tuningTitle = 'vs # Pulses';
+                   end
                 else
                     tuningTitle = 'vs Frequency';
                 end
