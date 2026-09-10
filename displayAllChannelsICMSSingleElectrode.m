@@ -13,7 +13,7 @@
 % temporal frequency is mapped to duration (in the old version, the
 % frequency of stimulation)
 
-function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode)
+function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('badTrialNameStr','var');     badTrialNameStr = '_v5';        end
@@ -578,7 +578,11 @@ colorNames = jet(numConditions);
 
                     if isShowSpiking
                         plot(hDeltaPSD(iGroup),tmpData.frTimeVals,frData,'color',colorNames(iCond,:)); hold(hDeltaPSD(iGroup),'on');
-                    else
+                    elseif smooth == 1
+                            deltaPSD_smooth = sgolayfilt(deltaPSD,3,9);
+                            plot(hDeltaPSD(iGroup),tmpData.freqST,deltaPSD_smooth,'color',colorNames(iCond,:)); hold(hDeltaPSD(iGroup),'on');
+                            plot(hDeltaPSD(iGroup),tmpData.freqST,zeros(1,length(deltaPSD_smooth)),'color','k');
+                        else
                         plot(hDeltaPSD(iGroup),tmpData.freqST,deltaPSD,'color',colorNames(iCond,:)); hold(hDeltaPSD(iGroup),'on');
                         plot(hDeltaPSD(iGroup),tmpData.freqST,zeros(1,length(deltaPSD)),'color','k');
                     end                    
