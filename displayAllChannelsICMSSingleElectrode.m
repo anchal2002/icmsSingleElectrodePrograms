@@ -13,7 +13,7 @@
 % temporal frequency is mapped to duration (in the old version, the
 % frequency of stimulation)
 
-function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag)
+function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('badTrialNameStr','var');     badTrialNameStr = '_v5';        end
@@ -61,12 +61,15 @@ for i=2:length(expDate)
 end
 
 % Guess the type of protocol
-if ~isscalar(aValsUnique) && isscalar(eValsUnique) && isscalar(tValsUnique)
+if ~isscalar(aValsUnique) && isscalar(eValsUnique) && isscalar(tValsUnique) && isempty(modulatorElectrode)
     protocolType = 1; 
     condVals = aValsUnique;
-elseif isscalar(aValsUnique) && ~isscalar(eValsUnique) && isscalar(tValsUnique)
+elseif isscalar(aValsUnique) && ~isscalar(eValsUnique) && isscalar(tValsUnique) && isempty(modulatorElectrode)
     protocolType = 2;
     condVals = eValsUnique;
+elseif ~isempty(modulatorElectrode) % for the paired stimulation protocol
+        protocolType = 3; 
+        condVals = aValsUnique;
 else
     error('Parameter combinations not in valid format');
 end
@@ -193,8 +196,13 @@ hTimingPanel = uipanel('Title','Timing','fontSize', fontSizeLarge, ...
 
 signalRange = [-0.5 1.5];
 freqRange = [0 100];
+if protocolType == 3 
+    baseline = [-0.8 -0.3];
+    stimPeriod = [0.75 1.25];
+else
 baseline = [-0.7 -0.2];
 stimPeriod = [0.7 1.2];
+end
 delPSDFreqRange = [16 32];
 
 % Signal Range
@@ -360,6 +368,17 @@ electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight
 for i=1:length(stimulationElectrode)
     [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i});
     
+    %remove modElecs for paired stim 
+    if ~isempty(modulatorElectrode{i})
+        modElec = modulatorElectrode{i}; 
+        for group = 1:length(electrodeGroupList{i})
+            if ismember(modElec, electrodeGroupList{i}{group})
+                electrodeGroupList{i}{group} = setdiff(electrodeGroupList{i}{group}, modElec);
+            end
+        end
+        goodElectrodes{i} = setdiff(goodElectrodes{i},modElec);
+    end
+    
     numElectrodeGroups(i) = length(electrodeGroupList{i});
 end
 [maxNumElectrodeGroups, idx] = max(numElectrodeGroups);
@@ -451,7 +470,7 @@ colorNames = jet(numConditions);
         tmpDeltaPSDNoStim = cell(max(numElectrodeGroups),1);
         for iCond = 1:numConditions
 
-            if protocolType == 1
+            if ismember(protocolType, [1,3])
                 a = iCond; e = 1; t = 1;
             elseif protocolType == 2
                 a = 1; e = iCond; t = 1;
@@ -480,7 +499,8 @@ colorNames = jet(numConditions);
                             % Accounting for difference in protocols
                             % performed before and after 060726
                             sessionDate = datetime(char(expDate{session}), 'InputFormat', 'ddMMyy');
-                            referenceDate = datetime('060726', 'InputFormat', 'ddMMyy');
+                           if ismember(protocolType, [1,2])
+                               referenceDate = datetime('060726', 'InputFormat', 'ddMMyy');
                             isAfterProtocolChange = sessionDate > referenceDate;
                             if isAfterProtocolChange
                                 if con == 1   % 0% contrast not recorded after 060726                                    
@@ -497,6 +517,9 @@ colorNames = jet(numConditions);
                             else
                                 c = con;
                             end
+                           else
+                                c=con;
+                           end
                             
                             for k = 1:length(tmpElectrodes{session})
                                 tmpData = getDataGRF(allData{session,tmpElectrodes{session}(k)==goodElectrodes{session}},a,e,s,f,o,c,t,blRange,stRange,removeERPFlag);
@@ -514,6 +537,14 @@ colorNames = jet(numConditions);
                         deltaTF = squeeze(mean(tmpDeltaTF,3));                        
                     else
                         % TODO: Update for single elctrode in group in multiple protocol case
+                        zeroCol = 1;
+                        while zeroCol <= length(tmpElectrodes) 
+                            if isempty(tmpElectrodes{zeroCol})
+                                tmpElectrodes(:,zeroCol) = [];
+                            else 
+                                zeroCol = zeroCol + 1;
+                            end
+                        end
                         tmpData = getDataGRF(allData{tmpElectrodes{1}==goodElectrodes{1}},a,e,s,f,o,con,t,blRange,stRange,removeERPFlag);
                         erpData = tmpData.erp;
                         frData = tmpData.frVals;
@@ -592,6 +623,7 @@ colorNames = jet(numConditions);
                     hold(ax, 'on');
                 end
                 % fprintf("Running Stats for %s", groupNameList{i});                
+                if size(groupData, 1) > 1
                 pValues = zeros(numConditions, numConditions);
                 for xi = 1:numConditions
                     for yi = 1:numConditions
@@ -631,7 +663,9 @@ colorNames = jet(numConditions);
                         end
                     end
                 end                                
+                end
             end
+       
             
             % Plot vs distance from stimulation electrode
             if singlePlotType == 3
