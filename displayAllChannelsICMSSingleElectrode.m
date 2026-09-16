@@ -13,11 +13,15 @@
 % temporal frequency is mapped to duration (in the old version, the
 % frequency of stimulation)
 
-function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth, effector)
+function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth, effector, meanData)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('badTrialNameStr','var');     badTrialNameStr = '_v5';        end
 if ~exist('useCommonBadTrialsFlag','var'); useCommonBadTrialsFlag = 1;  end
+if ~exist('modulatorElectrode','var'); modulatorElectrode = []; end
+if ~exist('effector','var'); effector = 1; end
+if ~exist('smooth','var'); smooth = 0; end
+if ~exist('meanData','var'); meanData = 1; end
 
 gridType = 'Microelectrode';
 isSingleSession = false;
@@ -420,10 +424,14 @@ if protocolType == 3
     if effector == 1
         uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
             'String',[subjectName '(effector)'],'FontSize',fontSizeSmall);
+        
     else
         uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
             'String',[subjectName '(modulator)'],'FontSize',fontSizeSmall);
     end
+    uicontrol('Unit','Normalized','Position',[0.85 0.94 0.14 0.03],...
+        'Style','pushbutton','String','Show all p-values',...
+        'FontSize',fontSizeSmall,'Callback',@showPValues_Callback); % show all p values 
 else
 uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
     'String',[subjectName expDate protocolName],'FontSize',fontSizeSmall);
@@ -449,6 +457,10 @@ for j=1:numStimulationElectrodes
 end
 colormap jet;
 colorNames = jet(numConditions);
+
+if protocolType == 3
+    allPValues = cell(max(numElectrodeGroups),1);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % functions
     function plotData_Callback(~,~)
@@ -574,8 +586,13 @@ colorNames = jet(numConditions);
                         deltaPSD = deltaPSD - deltaPSDNoStim{iGroup};
                         tmpDeltaPSD = tmpDeltaPSD - tmpDeltaPSDNoStim{iGroup};
                     end
-                                        
+                    if meanData == 1                    
                     deltaPSDSlowGamma{iGroup, iCond} = mean(squeeze(tmpDeltaPSD(:,tmpData.freqST>=delPSDFreqRange(1) & tmpData.freqST<=delPSDFreqRange(2))),2);
+                    else
+                        deltaPSDSlowGamma{iGroup, iCond} = max( ...
+                            squeeze(tmpDeltaPSD(:,tmpData.freqST>=delPSDFreqRange(1) & ...
+                            tmpData.freqST<=delPSDFreqRange(2))), [], 2);
+                    end
                     firingRateAllElecs{iGroup, iCond} = mean(tmpFRData(:, tmpData.frTimeVals >= stRange(1) & tmpData.frTimeVals <= stRange(2)), 2)...
                         - mean(tmpFRData(:, tmpData.frTimeVals >= blRange(1) & tmpData.frTimeVals <= blRange(2)), 2);
 
@@ -626,6 +643,8 @@ colorNames = jet(numConditions);
                 hElectrodes.YTickMode = 'auto';
                 hElectrodes.YTickLabelMode = 'auto';
             end
+           
+
             for iGroup=1:max(numElectrodeGroups)
                 groupData = zeros(size(deltaPSDSlowGamma{iGroup,1},1),numConditions);                
                 for iCond=1:numConditions                
@@ -639,13 +658,25 @@ colorNames = jet(numConditions);
                 meanData = mean(groupData,1);
                 errorData = std(groupData,[],1)/sqrt(size(groupData,1));
 
-                if singlePlotType == 2                    
-                    errorbar(hElectrodes, 0:numConditions-1, meanData,errorData,...
-                        '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2);                    
+                if singlePlotType == 2   
+                    if protocolType == 3
+                        errorbar(hElectrodes, 1:numConditions, meanData,errorData,...
+                            '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2);
+                    else
+                        errorbar(hElectrodes, 0:numConditions-1, meanData,errorData,...
+                            '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2);
+                    end
                 end
-                errorbar(hFR(iGroup), 0:numConditions-1, meanData,errorData,...
-                    '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2,...
-                    'MarkerSize',5);   
+                if protocolType == 3
+                    errorbar(hFR(iGroup), 1:numConditions, meanData,errorData,...
+                        '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2,...
+                        'MarkerSize',5);
+                else
+                    errorbar(hFR(iGroup), 0:numConditions-1, meanData,errorData,...
+                        '-o','Color',colorNamesElectrodeGroups(iGroup,:),'LineWidth',1.2,...
+                        'MarkerSize',5);
+                end  
+
                 if ~isSingleSession
                     ax = ancestor(hERP(iGroup), 'axes');            
                     v = violinplot(ax, groupData);
@@ -665,6 +696,11 @@ colorNames = jet(numConditions);
                             % end
                         end
                     end
+
+                    if protocolType == 3
+                        allPValues{iGroup} = pValues;
+                    end
+
                 end
                 
                 maxValue = max(max(groupData));
@@ -674,6 +710,50 @@ colorNames = jet(numConditions);
                         scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
                     end
                     % Plot Significance
+                    % Plot Significance
+                    if protocolType == 3
+                      
+                        % ax = ancestor(hFR(iGroup), 'axes');
+                        % 
+                        % % Show significance for ALL pairwise comparisons
+                        % sigCount = 0;
+                        % 
+                        % for x1 = 1:numConditions-1
+                        %     for x2 = x1+1:numConditions
+                        % 
+                        %         p = pValues(x1,x2);
+                        % 
+                        %         if p < 0.01
+                        % 
+                        %             sigCount = sigCount + 1;
+                        % 
+                        %             % Higher significance comparisons are placed higher
+                        %             y = maxValue + 0.5 + (sigCount-1)*0.5;
+                        % 
+                        %             line(ax,[x1 x2],[y y],...
+                        %                 'Color','k','LineWidth',1);
+                        % 
+                        %             if p < 0.001
+                        %                 significanceLevel = '***';
+                        %             % elseif p < 0.01
+                        %             %     significanceLevel = '**';
+                        %             else
+                        %                 significanceLevel = '**';
+                        %             end
+                        % 
+                        %             text(ax,mean([x1 x2]),y,...
+                        %                 significanceLevel,...
+                        %                 'HorizontalAlignment','center',...
+                        %                 'VerticalAlignment','bottom',...
+                        %                 'FontSize',14);
+                        %         end
+                        %     end
+                        % end
+
+                        continue;
+
+                        else
+                        
                     if xt < numConditions
                         if pValues(xt,xt+1) < 0.05
                             % Draw a line between the two groups  
@@ -691,6 +771,7 @@ colorNames = jet(numConditions);
                             text(ax,mean([xt-1, xt]), maxValue + 0.5, significanceLevel, 'HorizontalAlignment', 'center', 'FontSize', 14);                             
                         end
                     end
+                end
                 end                                
                 end
             end
@@ -752,10 +833,18 @@ colorNames = jet(numConditions);
                 title(hElectrodes,tuningTitle);
             end
             
-            xticks(hFR(max(numElectrodeGroups)), 0:numConditions-1)
-            xticklabels(hFR(max(numElectrodeGroups)), condVals)
-            xtickangle(hFR(max(numElectrodeGroups)), 90)
-            title(hFR(1),tuningTitle);  
+            for iGroup = 1:max(numElectrodeGroups)
+            if protocolType == 3
+                xticks(hFR(iGroup), 1:numConditions)
+                xticklabels(hFR(iGroup), condVals)
+            else
+                xticks(hFR(iGroup), 0:numConditions-1)
+                xticklabels(hFR(iGroup), condVals)
+            end
+            xtickangle(hFR(iGroup), 90)
+        end
+        
+        title(hFR(1),tuningTitle);
             
             if ~isSingleSession
                 xticklabels(hERP(max(numElectrodeGroups)), condVals) 
@@ -825,6 +914,51 @@ colorNames = jet(numConditions);
             end
         end
 
+    end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    function showPValues_Callback(~,~)
+
+        validGroups = find(~cellfun(@isempty, allPValues));
+
+        if isempty(validGroups)
+            msgbox('No p-values available. Plot the data first.', 'P-values');
+            return
+        end
+
+        pValueFig = figure( ...
+            'Name','Pairwise p-values', ...
+            'NumberTitle','off', ...
+            'Position',[300 100 900 700]);
+
+        tg = uitabgroup(pValueFig);
+
+        conditionLabels = arrayfun(@num2str, condVals, ...
+            'UniformOutput',false);
+
+        for k = 1:length(validGroups)
+
+            iGroup = validGroups(k);
+
+            % Assign the cell array to a temporary variable first
+            pValueCell = allPValues;
+            pMat = pValueCell{iGroup};
+
+            % Do not show diagonal as a statistical comparison
+            pMat(1:size(pMat,1)+1:end) = NaN;
+
+            groupName = string(groupNameList{idx}{iGroup});
+
+            tab = uitab(tg, 'Title',groupName);
+
+            uitable(tab, ...
+                'Data',pMat, ...
+                'ColumnName',conditionLabels, ...
+                'RowName',conditionLabels, ...
+                'Units','normalized', ...
+                'Position',[0.02 0.02 0.96 0.96]);
+        end
     end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -952,7 +1086,7 @@ end
     end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%c%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load Data
 function [parameterCombinations,aValsUnique,eValsUnique,sValsUnique,fValsUnique,oValsUnique,cValsUnique,tValsUnique] = loadParameterCombinations(folderExtract)
 
@@ -993,3 +1127,5 @@ else
     impedanceValues = [];
 end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
