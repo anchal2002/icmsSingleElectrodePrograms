@@ -88,7 +88,14 @@ panelHeight = 0.25; panelStartHeight = 0.7;
 staticPanelWidth = 0.2; staticStartPos = 0.75;
 dynamicPanelWidth = 0.2; dynamicStartPos = 0.05;
 timingPanelWidth = 0.2; timingStartPos = 0.25;
-plotOptionsPanelWidth = 0.2; plotOptionsStartPos = 0.45;
+
+% Plotting and charting options
+plotOptionsPanelWidth = 0.13;
+plotOptionsStartPos = 0.45;
+
+chartingOptionsPanelWidth = 0.17;
+chartingOptionsStartPos = 0.58;
+
 backgroundColor = 'w';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -287,17 +294,6 @@ hStimPeriodMax = uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
     'Position',[timingTextWidth+timingBoxWidth 1-7*timingHeight timingBoxWidth timingHeight], ...
     'Style','edit','String',num2str(stimPeriod(2)),'FontSize',fontSizeSmall);
 
-% Subtract No Stim Condition
-hNoStimSubtract = uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
-    'BackgroundColor', backgroundColor, ...
-    'Position',[0 1-8*timingHeight timingTextWidth timingHeight], ...
-    'Style','togglebutton','String','Subtract No Stim','Value',0,'FontSize',fontSizeSmall);
-
-% Subtract No Stim Condition
-hShowSpiking = uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
-    'BackgroundColor', backgroundColor, ...
-    'Position',[0.5 1-8*timingHeight timingTextWidth timingHeight], ...
-    'Style','togglebutton','String','Show Spiking','Value',0,'FontSize',fontSizeSmall);
 
 % Z Range
 uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
@@ -313,41 +309,86 @@ hZMax = uicontrol('Parent',hTimingPanel,'Unit','Normalized', ...
     'Style','edit','String','10','FontSize',fontSizeSmall);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% Plot Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Plot Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-plotOptionsHeight = 0.15;
+
+plotOptionsHeight = 0.16;
+
 hPlotOptionsPanel = uipanel('Title','Plotting Options','fontSize', fontSizeLarge, ...
-    'Unit','Normalized','Position',[plotOptionsStartPos panelStartHeight plotOptionsPanelWidth panelHeight]);
+    'Unit','Normalized','Position',[plotOptionsStartPos panelStartHeight ...
+    plotOptionsPanelWidth panelHeight]);
 
 % Single Plot Options
 singlePlotString = {"Electrodes", "vs Microstim Parameter", "vs Distance"};
+
 uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
-    'Position',[0 5*plotOptionsHeight 0.5 plotOptionsHeight], ...
+    'Position',[0 0.80 0.42 plotOptionsHeight], ...
     'Style','text','String','Single Plot','FontSize',fontSizeSmall);
+
 hSinglePlot = uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
-    'BackgroundColor', backgroundColor, 'Position', ...
-    [0.5 5*plotOptionsHeight 0.5 plotOptionsHeight], ...
+    'BackgroundColor', backgroundColor, ...
+    'Position',[0.42 0.80 0.58 plotOptionsHeight], ...
     'Style','popup','String',singlePlotString,'FontSize',fontSizeSmall);
 
 uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
-    'Position',[0 3*plotOptionsHeight 1 plotOptionsHeight], ...
-    'Style','pushbutton','String','cla','FontSize',fontSizeMedium, ...
+    'Position',[0 0.60 1 plotOptionsHeight], ...
+    'Style','pushbutton','String','cla','FontSize',fontSizeSmall, ...
     'Callback',{@cla_Callback});
 
 uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
-    'Position',[0 2*plotOptionsHeight 1 plotOptionsHeight], ...
-    'Style','pushbutton','String','rescale Z','FontSize',fontSizeMedium, ...
+    'Position',[0 0.40 1 plotOptionsHeight], ...
+    'Style','pushbutton','String','rescale Z','FontSize',fontSizeSmall, ...
     'Callback',{@rescaleZ_Callback});
 
 uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
-    'Position',[0 plotOptionsHeight 1 plotOptionsHeight], ...
-    'Style','pushbutton','String','rescale XY','FontSize',fontSizeMedium, ...
+    'Position',[0 0.20 1 plotOptionsHeight], ...
+    'Style','pushbutton','String','rescale XY','FontSize',fontSizeSmall, ...
     'Callback',{@rescaleData_Callback});
 
 uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
     'Position',[0 0 1 plotOptionsHeight], ...
-    'Style','pushbutton','String','plot','FontSize',fontSizeMedium, ...
+    'Style','pushbutton','String','plot','FontSize',fontSizeSmall, ...
     'Callback',{@plotData_Callback});
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%% Charting Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+chartingHeight = 0.14;
+
+hChartingOptionsPanel = uipanel('Title','Charting Options','fontSize', fontSizeLarge, ...
+    'Unit','Normalized','Position',[chartingOptionsStartPos panelStartHeight ...
+    chartingOptionsPanelWidth panelHeight]);
+
+% Show all p-values
+uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
+    'Position',[0 0.84 1 chartingHeight], ...
+    'Style','pushbutton','String','Show all p-values', ...
+    'FontSize',fontSizeSmall, ...
+    'Callback',@showPValues_Callback);
+
+% Subtract No Stim
+hNoStimSubtract = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
+    'BackgroundColor',backgroundColor, ...
+    'Position',[0 0.66 1 chartingHeight], ...
+    'Style','togglebutton','String','Subtract No Stim', ...
+    'Value',0,'FontSize',fontSizeSmall);
+
+% Show Spiking
+hShowSpiking = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
+    'BackgroundColor',backgroundColor, ...
+    'Position',[0 0.48 1 chartingHeight], ...
+    'Style','togglebutton','String','Show Spiking', ...
+    'Value',0,'FontSize',fontSizeSmall);
+
+% Show Significance
+hShowSignificance = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
+    'BackgroundColor',backgroundColor, ...
+    'Position',[0 0.12 1 chartingHeight], ...
+    'Style','togglebutton', ...
+    'String','Show Significance', ...
+    'Value',0, ...
+    'FontSize',fontSizeSmall);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Show electrode array and bad channels
@@ -429,9 +470,7 @@ if protocolType == 3
         uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
             'String',[subjectName '(modulator)'],'FontSize',fontSizeSmall);
     end
-    uicontrol('Unit','Normalized','Position',[0.85 0.94 0.14 0.03],...
-        'Style','pushbutton','String','Show all p-values',...
-        'FontSize',fontSizeSmall,'Callback',@showPValues_Callback); % show all p values 
+    
 else
 uicontrol('Unit','Normalized','Position',[0 0.975 1 0.025],'Style','text',...
     'String',[subjectName expDate protocolName],'FontSize',fontSizeSmall);
@@ -481,6 +520,7 @@ end
         isNoStimSubtract = get(hNoStimSubtract,'val');
         isShowSpiking = get(hShowSpiking, 'val');
         singlePlotType = get(hSinglePlot,'val');
+        isShowSignificance = get(hShowSignificance, 'val');
 
         removeERPFlag = 1;
         
@@ -702,53 +742,53 @@ end
                     end
 
                 end
-                
+                if isShowSignificance
                 maxValue = max(max(groupData));
                 for xt = 1:numConditions
                     if ~isSingleSession
                         v(xt).FaceColor = colorNames(xt,:);
                         scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
                     end
-                    % Plot Significance
+                    
                     % Plot Significance
                     if protocolType == 3
                       
-                        % ax = ancestor(hFR(iGroup), 'axes');
-                        % 
-                        % % Show significance for ALL pairwise comparisons
-                        % sigCount = 0;
-                        % 
-                        % for x1 = 1:numConditions-1
-                        %     for x2 = x1+1:numConditions
-                        % 
-                        %         p = pValues(x1,x2);
-                        % 
-                        %         if p < 0.01
-                        % 
-                        %             sigCount = sigCount + 1;
-                        % 
-                        %             % Higher significance comparisons are placed higher
-                        %             y = maxValue + 0.5 + (sigCount-1)*0.5;
-                        % 
-                        %             line(ax,[x1 x2],[y y],...
-                        %                 'Color','k','LineWidth',1);
-                        % 
-                        %             if p < 0.001
-                        %                 significanceLevel = '***';
-                        %             % elseif p < 0.01
-                        %             %     significanceLevel = '**';
-                        %             else
-                        %                 significanceLevel = '**';
-                        %             end
-                        % 
-                        %             text(ax,mean([x1 x2]),y,...
-                        %                 significanceLevel,...
-                        %                 'HorizontalAlignment','center',...
-                        %                 'VerticalAlignment','bottom',...
-                        %                 'FontSize',14);
-                        %         end
-                        %     end
-                        % end
+                        ax = ancestor(hFR(iGroup), 'axes');
+
+                        % Show significance for ALL pairwise comparisons
+                        sigCount = 0;
+
+                        for x1 = 1:numConditions-1
+                            for x2 = x1+1:numConditions
+
+                                p = pValues(x1,x2);
+
+                                if p < 0.01
+
+                                    sigCount = sigCount + 1;
+
+                                    % Higher significance comparisons are placed higher
+                                    y = maxValue + 0.5 + (sigCount-1)*0.5;
+
+                                    line(ax,[x1 x2],[y y],...
+                                        'Color','k','LineWidth',1);
+
+                                    if p < 0.001
+                                        significanceLevel = '***';
+                                    % elseif p < 0.01
+                                    %     significanceLevel = '**';
+                                    else
+                                        significanceLevel = '**';
+                                    end
+
+                                    text(ax,mean([x1 x2]),y,...
+                                        significanceLevel,...
+                                        'HorizontalAlignment','center',...
+                                        'VerticalAlignment','bottom',...
+                                        'FontSize',14);
+                                end
+                            end
+                        end
 
                         continue;
 
@@ -772,7 +812,8 @@ end
                         end
                     end
                 end
-                end                                
+                end
+                end
                 end
             end
        
@@ -827,9 +868,15 @@ end
             rescalePlots(hERP,[0 numConditions getYLims(hERP)]);
 
             if singlePlotType == 2
-                rescalePlots(hElectrodes, [0 numConditions getYLims(hElectrodes)]);                       
-                xticks(hElectrodes, 0:numConditions-1)
-                xticklabels(hElectrodes, condVals)                
+                if protocolType == 3
+                    rescalePlots(hElectrodes, [0 numConditions+1 getYLims(hElectrodes)]);
+                    xticks(hElectrodes, 1:numConditions);
+                    xticklabels(hElectrodes, condVals);
+                else
+                    rescalePlots(hElectrodes, [0 numConditions-1 getYLims(hElectrodes)]);
+                    xticks(hElectrodes, 0:numConditions-1);
+                    xticklabels(hElectrodes, condVals);
+                end
                 title(hElectrodes,tuningTitle);
             end
             
@@ -883,6 +930,18 @@ end
         zRange = [str2double(get(hZMin,'String')) str2double(get(hZMax,'String'))];
         rescaleZPlots(hDeltaTF,zRange);
     end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function meanMax_Callback(src,~)
+
+        if get(src,'Value') == 1
+            set(src,'String','Mean');
+        else
+            set(src,'String','Max');
+        end
+
+    end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     function rescaleData_Callback(~,~)
