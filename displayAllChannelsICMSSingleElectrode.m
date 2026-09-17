@@ -721,7 +721,20 @@ end
                     ax = ancestor(hERP(iGroup), 'axes');            
                     v = violinplot(ax, groupData);
                     hold(ax, 'on');
+                    for xt =1: numConditions
+                    v(xt).FaceColor = colorNames(xt,:);
+                    scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
+                    end
                 end
+
+                % for xt = 1:numConditions
+                %     if ~isSingleSession
+                %         v(xt).FaceColor = colorNames(xt,:);
+                %         scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
+                %     end
+                % end
+
+
                 % fprintf("Running Stats for %s", groupNameList{i});                
                 if size(groupData, 1) > 1
                 pValues = zeros(numConditions, numConditions);
@@ -742,14 +755,16 @@ end
                     end
 
                 end
+
+               
                 if isShowSignificance
                 maxValue = max(max(groupData));
                 for xt = 1:numConditions
-                    if ~isSingleSession
-                        v(xt).FaceColor = colorNames(xt,:);
-                        scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
-                    end
-                    
+                    % if ~isSingleSession
+                    %     v(xt).FaceColor = colorNames(xt,:);
+                    %     scatter(hERP(iGroup),ones(size(groupData,1))*xt, groupData(:,xt), 10, colorNames(xt,:), "filled")
+                    % end
+
                     % Plot Significance
                     if protocolType == 3
                       
