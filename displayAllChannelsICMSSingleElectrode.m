@@ -22,6 +22,7 @@ if ~exist('modulatorElectrode','var'); modulatorElectrode = []; end
 if ~exist('effector','var'); effector = 1; end
 if ~exist('smooth','var'); smooth = 0; end
 if ~exist('meanData','var'); meanData = 1; end
+if ~exist('groupedStimChannels','var'); groupedStimChannels = 1; end
 
 gridType = 'Microelectrode';
 isSingleSession = false;
@@ -357,38 +358,45 @@ uicontrol('Parent',hPlotOptionsPanel,'Unit','Normalized', ...
 chartingHeight = 0.14;
 
 hChartingOptionsPanel = uipanel('Title','Charting Options','fontSize', fontSizeLarge, ...
-    'Unit','Normalized','Position',[chartingOptionsStartPos panelStartHeight ...
-    chartingOptionsPanelWidth panelHeight]);
+'Unit','Normalized','Position',[chartingOptionsStartPos panelStartHeight ...
+chartingOptionsPanelWidth panelHeight]);
 
 % Show all p-values
 uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
-    'Position',[0 0.84 1 chartingHeight], ...
-    'Style','pushbutton','String','Show all p-values', ...
-    'FontSize',fontSizeSmall, ...
-    'Callback',@showPValues_Callback);
+'Position',[0.05 0.82 0.90 chartingHeight], ...
+'Style','pushbutton','String','Show all p-values', ...
+'FontSize',fontSizeSmall, ...
+'Callback',@showPValues_Callback);
 
 % Subtract No Stim
 hNoStimSubtract = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
-    'BackgroundColor',backgroundColor, ...
-    'Position',[0 0.66 1 chartingHeight], ...
-    'Style','togglebutton','String','Subtract No Stim', ...
-    'Value',0,'FontSize',fontSizeSmall);
+'BackgroundColor',backgroundColor, ...
+'Position',[0.05 0.65 0.90 chartingHeight], ...
+'Style','togglebutton','String','Subtract No Stim', ...
+'Value',0,'FontSize',fontSizeSmall);
+
+% Subtract Single Stim
+hSingleStimSubtract = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
+'BackgroundColor',backgroundColor, ...
+'Position',[0.05 0.48 0.90 chartingHeight], ...
+'Style','togglebutton','String','Subtract Single Stim', ...
+'Value',0,'FontSize',fontSizeSmall);
 
 % Show Spiking
 hShowSpiking = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
-    'BackgroundColor',backgroundColor, ...
-    'Position',[0 0.48 1 chartingHeight], ...
-    'Style','togglebutton','String','Show Spiking', ...
-    'Value',0,'FontSize',fontSizeSmall);
+'BackgroundColor',backgroundColor, ...
+'Position',[0.05 0.31 0.90 chartingHeight], ...
+'Style','togglebutton','String','Show Spiking', ...
+'Value',0,'FontSize',fontSizeSmall);
 
 % Show Significance
 hShowSignificance = uicontrol('Parent',hChartingOptionsPanel,'Unit','Normalized', ...
-    'BackgroundColor',backgroundColor, ...
-    'Position',[0 0.12 1 chartingHeight], ...
-    'Style','togglebutton', ...
-    'String','Show Significance', ...
-    'Value',0, ...
-    'FontSize',fontSizeSmall);
+'BackgroundColor',backgroundColor, ...
+'Position',[0.05 0.14 0.90 chartingHeight], ...
+'Style','togglebutton', ...
+'String','Show Significance', ...
+'Value',0, ...
+'FontSize',fontSizeSmall);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Show electrode array and bad channels
@@ -411,7 +419,7 @@ end
 electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight];
 [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName);
 for i=1:length(stimulationElectrode)
-    [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i});
+    [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode{i});
     
     %remove modElecs for paired stim 
     if ~isempty(modulatorElectrode{i})
@@ -518,6 +526,7 @@ end
         zRange = [str2double(get(hZMin,'String')) str2double(get(hZMax,'String'))];
 
         isNoStimSubtract = get(hNoStimSubtract,'val');
+        isSingleStimSubtract = get(hSingleStimSubtract,'val');
         isShowSpiking = get(hShowSpiking, 'val');
         singlePlotType = get(hSinglePlot,'val');
         isShowSignificance = get(hShowSignificance, 'val');
@@ -542,14 +551,7 @@ end
                 clear tmpElectrodes
                 % Get data from electrodes                   
                 for session=1:size(electrodeGroupList,2)
-                    if protocolType == 3
-                        if effector == 1
-                        if a == 4 && session == 4
-                        continue;
-                        end
-                        end
-                    end
-                    
+                  
                     if iGroup > length(electrodeGroupList{session}) 
                         continue; 
                     end
@@ -635,6 +637,22 @@ end
                         deltaPSD = deltaPSD - deltaPSDNoStim{iGroup};
                         tmpDeltaPSD = tmpDeltaPSD - tmpDeltaPSDNoStim{iGroup};
                     end
+
+                    if iCond == 2
+                        deltaTFSingleStim{iGroup} = deltaTF;
+                        deltaPSDSingleStim{iGroup} = deltaPSD;
+                        tmpDeltaPSDSingleStim{iGroup} = tmpDeltaPSD;
+                    end
+
+                    
+                    if isSingleStimSubtract && iCond >= 2
+                        deltaTF = deltaTF - deltaTFSingleStim{iGroup};
+                        deltaPSD = deltaPSD - deltaPSDSingleStim{iGroup};
+                        tmpDeltaPSD = tmpDeltaPSD - tmpDeltaPSDSingleStim{iGroup};
+                    end
+
+                    
+
                     if meanData == 1                    
                     deltaPSDSlowGamma{iGroup, iCond} = mean(squeeze(tmpDeltaPSD(:,tmpData.freqST>=delPSDFreqRange(1) & tmpData.freqST<=delPSDFreqRange(2))),2);
                     else
@@ -903,11 +921,12 @@ end
             rescalePlots(hERP,[1 numConditions getYLims(hERP)]);
             
             if protocolType == 3
+
                 rescalePlots(hERP,[1 numConditions getYLims(hERP)]);
 
-                xticks(hERP(max(numElectrodeGroups)), 1:numConditions);
                 xticklabels(hERP(max(numElectrodeGroups)), condVals);
                 xtickangle(hERP(max(numElectrodeGroups)), 90);
+
             else
             xticks(hERP(max(numElectrodeGroups)), 1:numConditions);
             xticklabels(hERP(max(numElectrodeGroups)), condVals);
@@ -940,7 +959,7 @@ end
         
         title(hFR(1),tuningTitle);
             
-            if ~isSingleSession
+            if ~isSingleSession 
                 xticklabels(hERP(max(numElectrodeGroups)), condVals) 
                 xtickangle(hERP(max(numElectrodeGroups)), 90)
                 title(hERP(1),[tuningTitle ' (Violin)']);                              
@@ -1117,7 +1136,7 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [electrodeGroupList,groupNameList,goodElectrodes] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode,badChannels,expDate_)
+function [electrodeGroupList,groupNameList,goodElectrodes] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode,badChannels,expDate_, modulatorElectrode)
 % Accounting for difference in protocols
 % performed before and after 060726
 sessionDate = datetime(char(expDate_), 'InputFormat', 'ddMMyy');
@@ -1139,8 +1158,16 @@ elseif strcmp(subjectName,'jojo')
     highRMSElectrodes = [highRMSElectrodes [84 89]];    % Temporarily making 89 a high RMS electrode
 end
 goodElectrodes = setdiff(highRMSElectrodes,badChannels);
+groupedStimChannels = 1;
+if groupedStimChannels == 1
+    [rstim,cstim] = find(electrodeArray==stimulationElectrode);
+    [rmod,cmod] = find(electrodeArray==modulatorElectrode);
 
-[r1,c1] = find(electrodeArray==stimulationElectrode);
+    r1 = (rstim + rmod) / 2;
+    c1 = (cstim + cmod) / 2;
+else
+    [r1,c1] = find(electrodeArray==stimulationElectrode);
+end
 
 distances = [];
 for i=1:length(goodElectrodes)
