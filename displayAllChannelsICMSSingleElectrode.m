@@ -22,7 +22,7 @@ if ~exist('modulatorElectrode','var'); modulatorElectrode = []; end
 if ~exist('effector','var'); effector = 1; end
 if ~exist('smooth','var'); smooth = 0; end
 if ~exist('meanData','var'); meanData = 1; end
-if ~exist('groupedStimChannels','var'); groupedStimChannels = 1; end
+if ~exist('groupedStimChannels','var'); groupedStimChannels = 0; end
 
 gridType = 'Microelectrode';
 isSingleSession = false;
@@ -419,8 +419,11 @@ end
 electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight];
 [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName);
 for i=1:length(stimulationElectrode)
-    [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode{i});
-    
+    if groupedStimChannels == 1
+        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode{i});
+    else
+        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode);
+    end
     %remove modElecs for paired stim 
     if ~isempty(modulatorElectrode{i})
         modElec = modulatorElectrode{i}; 
