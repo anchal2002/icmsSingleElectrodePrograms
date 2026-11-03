@@ -13,7 +13,7 @@
 % temporal frequency is mapped to duration (in the old version, the
 % frequency of stimulation)
 
-function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth, effector, meanData)
+function displayAllChannelsICMSSingleElectrode(subjectName,expDate,protocolName,folderSourceString,stimulationElectrode,badTrialNameStr,useCommonBadTrialsFlag, modulatorElectrode, smooth, effector, meanData, groupedStimChannels)
 
 if ~exist('folderSourceString','var');   folderSourceString='E:';       end
 if ~exist('badTrialNameStr','var');     badTrialNameStr = '_v5';        end
@@ -420,9 +420,9 @@ electrodeGridPos = [staticStartPos panelStartHeight staticPanelWidth panelHeight
 [~,~,electrodeArray] = electrodePositionOnGrid(1,gridType,subjectName);
 for i=1:length(stimulationElectrode)
     if groupedStimChannels == 1
-        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode{i});
+        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode{i}, groupedStimChannels);
     else
-        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode);
+        [electrodeGroupList{i},groupNameList{i},goodElectrodes{i}] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode{i},badChannels,expDate{i}, modulatorElectrode, groupedStimChannels);
     end
     %remove modElecs for paired stim 
     if ~isempty(modulatorElectrode{i})
@@ -1139,7 +1139,7 @@ end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [electrodeGroupList,groupNameList,goodElectrodes] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode,badChannels,expDate_, modulatorElectrode)
+function [electrodeGroupList,groupNameList,goodElectrodes] = getElectrodeGroups(subjectName,gridType,electrodeArray,stimulationElectrode,badChannels,expDate_, modulatorElectrode, groupedStimChannels)
 % Accounting for difference in protocols
 % performed before and after 060726
 sessionDate = datetime(char(expDate_), 'InputFormat', 'ddMMyy');
@@ -1161,7 +1161,7 @@ elseif strcmp(subjectName,'jojo')
     highRMSElectrodes = [highRMSElectrodes [84 89]];    % Temporarily making 89 a high RMS electrode
 end
 goodElectrodes = setdiff(highRMSElectrodes,badChannels);
-groupedStimChannels = 1;
+
 if groupedStimChannels == 1
     [rstim,cstim] = find(electrodeArray==stimulationElectrode);
     [rmod,cmod] = find(electrodeArray==modulatorElectrode);
