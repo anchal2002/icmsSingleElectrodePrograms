@@ -611,7 +611,7 @@ end
                         deltaPSD = mean(tmpDeltaPSD,1);
                         deltaTF = squeeze(mean(tmpDeltaTF,3));                        
                     else
-                        % TODO: Update for single elctrode in group in multiple protocol case
+                        % TODO: Update for single electrode in group in multiple protocol case
                         zeroCol = 1;
                         while zeroCol <= length(tmpElectrodes) 
                             if isempty(tmpElectrodes{zeroCol})
